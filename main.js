@@ -13,6 +13,7 @@ const dayNames = [
 ]
 const restaurantName = "LUT Buffet";
 const columnStructure = ["foodName", "studentPrice", "studentWithoutKelaPrice", "staffPrice", "price"]
+// TODO: replace foodnames, localization
 const foodNames = ["Kasviskeitto", "Kasvisruoka", "Halpis", "Kallis", "Kevyesti", "Kevyesti + keitto"];
 
 
@@ -58,7 +59,6 @@ const parseBody = (body) => {
             if(!text) break;
 
             if(dayNames.includes(text.toLowerCase())) {
-                console.log(text);
                 currentDay = { day: text };
                 break;
             }
@@ -78,7 +78,7 @@ const parseBody = (body) => {
                 category.availability = currentDay.availability;
                 if(col === 0) {
                     let food = {
-                        name: text.replace(/\s+[G|VL|VE|L|M|\*]+,*/g, ""),
+                        name: text.replace(/\s*[G|VL|VE|L|M|\*]+,*/g, ""),
                         dietInfo: text.match(/[G|VL|VE|L|M|\*]+/g) || []
                     }
                     category.foods.push(food);
@@ -92,12 +92,12 @@ const parseBody = (body) => {
         if(category.foods.length > 0) {
             category.category = foodNames[foodNameIterator++];
             if(foodNameIterator >= foodNames.length) foodNameIterator = 0;
-            
+
             category.special = null;
             menu.categories.push(category);
         }
     }
-    console.log(JSON.stringify(menu.categories, null, 2));
+    console.log(JSON.stringify(menu, null, 2));
 }
 
 main();
