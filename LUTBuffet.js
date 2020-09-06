@@ -41,55 +41,37 @@ const fetchSite = async (url) => {
 const parseBody = (body) => {
     const $ = cheerio.load(body);
     const date = getDate($);
-    let foods = {};
     const trs = $("tbody tr");
-    const weeklyMenu = {};
-    let menu = initMenu();
 
-    let currentDay = {};
+    let foods = {};
+    let weeklyMenu = {};
+    let menu = initMenu();
+    let availability = null;
+    let weekday = null;
+    let text = "";
+
     let foodNameIterator = 0;
-    for(let row = 0, rows = trs.length; row < rows; row++) {
-        const tds = $("td", trs[row]);
+    for(let rowIndex = 0, rowCount = trs.length; rowIndex < rowCount; rowIndex++) {
+        const tds = $("td", trs[rowIndex]);
         let category = { foods: [] };
 
-        for(let col = 0, cols = tds.length; col < cols; col++) {
-            const td = tds[col];
-            const text = $(td).text().trim();
+        for(let colIndex = 0, colCount = tds.length; colIndex < colCount; colIndex++) {
+            const td = tds[colIndex];
+            text = $(td).text().trim();
             if(!text) break;
 
-            // When a weekday td is passed
             if(dayNames.includes(text.toLowerCase())) {
-                if(currentDay.day) {
-                    const weekday = dayNames.indexOf(currentDay.day);
-                    const key = getWeekdayDate(date, weekday);
-                    weeklyMenu[key] = menu;
-                    menu = initMenu();
-                }
-                currentDay = { day: text.toLowerCase() };
-            }
-
-            // Add availability
-            if(text.includes("klo") && currentDay.day) {
-                const availability = text.match(/\d+.\d+\s*.\s*\d+.\d+/g);
-                if(availability.length > 0) {
-                    currentDay.availability = availability[0].replace(/\s/g, "");
-                }
+                [weeklyMenu, weekday, menu] = handleWeekday(text, weekday, date, menu, weeklyMenu);
                 break;
             }
 
-            // Add food and prices
-            if(currentDay.day && currentDay.availability) {
-                category.availability = currentDay.availability;
-                if(col === 0) {
-                    let food = {
-                        name: text.replace(/\s*[G|VL|VE|L|M|\*]+,*/g, ""),
-                        dietInfo: text.match(/[G|VL|VE|L|M|\*]+/g) || []
-                    }
-                    category.foods.push(food);
-                }
-                else {
-                    category[columnStructure[col]] = `${text}€`;
-                }
+            else if(text.includes("klo") && weekday) {
+                availability = handleAvailability(text, availability);
+                break;
+            }
+
+            else if(weekday && availability) {
+                category = handleFoodAndPrices(text, colIndex, availability, category);
             }
         }
 
@@ -101,7 +83,42 @@ const parseBody = (body) => {
             menu.categories.push(category);
         }
     }
+    [weeklyMenu, weekday, menu] = handleWeekday(text, weekday, date, menu, weeklyMenu);
     return weeklyMenu;
+}
+
+const handleWeekday = (text, weekday, date, menu, weeklyMenu) => {
+        if(weekday) {
+            const weekdayIndex = dayNames.indexOf(weekday);
+            const key = getWeekdayDate(date, weekdayIndex);
+            weeklyMenu[key] = menu;
+            menu = initMenu();
+        }
+        weekday = text.toLowerCase();
+        return [weeklyMenu, weekday, menu];
+}
+
+const handleAvailability = (text, availability) => {
+    const availabilityText = text.match(/\d+.\d+\s*.\s*\d+.\d+/g);
+    if(availabilityText.length > 0) {
+        availability = availabilityText[0].replace(/\s/g, "");
+    }
+    return(availability);  
+}
+
+const handleFoodAndPrices = (text, colIndex, availability, category) => {
+    category.availability = availability;
+    if(colIndex === 0) {
+        let food = {
+            name: text.replace(/\s*[G|VL|VE|L|M|\*]+,*/g, ""),
+            dietInfo: text.match(/[G|VL|VE|L|M|\*]+/g) || []
+        }
+        category.foods.push(food);
+    }
+    else {
+        category[columnStructure[colIndex]] = `${text}€`;
+    }
+    return category;
 }
 
 const initMenu = () => {
