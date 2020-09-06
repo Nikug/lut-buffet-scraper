@@ -110,8 +110,8 @@ const handleFoodAndPrices = (text, colIndex, availability, category) => {
     category.availability = availability;
     if(colIndex === 0) {
         let food = {
-            name: text.replace(/\s*(G|VL|VE|L|M|\*)+,*/g, ""),
-            dietInfo: text.match(/(G|VL|VE|L|M|\*)+/g) || []
+            name: text.replace(/\s*(G|VL|VE|L|M|\*),*/g, ""),
+            dietInfo: text.match(/(G|VL|VE|L|M|\*)/g) || []
         }
         category.foods.push(food);
     }
