@@ -2,22 +2,26 @@ const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 
 const languages = ["en", "fi"];
-const dayNames = [
-    "maanantai",
-    "tiistai",
-    "keskiviikko",
-    "torstai",
-    "perjantai",
-    "lauantai",
-    "sunnuntai",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-    "sunday"
-]
+const dayNames = {
+    "en": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+    ],
+    "fi": [
+        "maanantai",
+        "tiistai",
+        "keskiviikko",
+        "torstai",
+        "perjantai",
+        "lauantai",
+        "sunnuntai"
+    ]
+}
 
 const restaurantName = "LUT Buffet";
 const columnStructure = ["foodName", "studentPrice", "studentWithoutKelaPrice", "staffPrice", "price"];
@@ -58,12 +62,13 @@ exports.scrape = async (language) => {
 }
 
 const getUrl = (language) => {
-    return `http://wwwww.kampusravintolat.fi/${language}/lutbuffet`;
+    return `http://www.kampusravintolat.fi/${language}/lutbuffet`;
 }
 
 const fetchSite = async (url) => {
+    let res;
     try {
-        const res = await fetch(url);
+        res = await fetch(url);
     } catch(e) {
         return null;
     }
@@ -99,8 +104,8 @@ const parseBody = (body, language) => {
             };
             if(skipStrings.indexOf(text) !== -1) break;
 
-            if(dayNames.includes(text.toLowerCase())) {
-                [weeklyMenu, weekday, menu] = handleWeekday(text, weekday, date, menu, weeklyMenu);
+            if(dayNames[language].includes(text.toLowerCase())) {
+                [weeklyMenu, weekday, menu] = handleWeekday(text, weekday, date, menu, weeklyMenu, language);
                 break;
             }
 
@@ -118,7 +123,7 @@ const parseBody = (body, language) => {
             [menu, foodNameIterator] = addFood(menu, category, language, foodNameIterator);
         }
     }
-    [weeklyMenu, weekday, menu] = handleWeekday(text, weekday, date, menu, weeklyMenu);
+    [weeklyMenu, weekday, menu] = handleWeekday(text, weekday, date, menu, weeklyMenu, language);
     return weeklyMenu;
 }
 
@@ -144,9 +149,9 @@ const matchMultipleWords = (text, words) => {
     return false;
 }
 
-const handleWeekday = (text, weekday, date, menu, weeklyMenu) => {
+const handleWeekday = (text, weekday, date, menu, weeklyMenu, language) => {
         if(weekday) {
-            const weekdayIndex = dayNames.indexOf(weekday);
+            const weekdayIndex = dayNames[language].indexOf(weekday);
             const key = getWeekdayDate(date, weekdayIndex);
             weeklyMenu[key] = menu;
             menu = initMenu();
